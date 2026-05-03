@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "GuardDuty Alert Analyzer"
+version = "1.0.0"
+id = "artifacts/guardduty-analyzer"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19242
+
+[services.development]
+run = "pnpm --filter @workspace/guardduty-analyzer run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/guardduty-analyzer", "run", "build" ]
+publicDir = "artifacts/guardduty-analyzer/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19242"
+BASE_PATH = "/"

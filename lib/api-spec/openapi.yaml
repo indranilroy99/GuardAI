@@ -1,0 +1,1123 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: alerts
+    description: GuardDuty alert analysis and remediation
+  - name: aws
+    description: Live AWS connectivity and investigation
+  - name: audit
+    description: Audit log operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List all analyzed alerts
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, generated, applied, failed]
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        - name: accountId
+          in: query
+          schema:
+            type: string
+          description: Filter by AWS account ID (omit or "all" for all accounts)
+        - name: since
+          in: query
+          schema:
+            type: string
+          description: ISO date string — only return alerts created at or after this time
+      responses:
+        "200":
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+    post:
+      operationId: analyzeAlert
+      tags: [alerts]
+      summary: Analyze a GuardDuty alert JSON using AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeAlertBody"
+      responses:
+        "201":
+          description: Alert analyzed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  /alerts/nl-query:
+    post:
+      operationId: naturalLanguageQuery
+      tags: [alerts]
+      summary: Query alerts using natural language powered by AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NlQueryBody"
+      responses:
+        "200":
+          description: Filtered alerts matching the natural language query
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /alerts/{id}:
+    get:
+      operationId: getAlert
+      tags: [alerts]
+      summary: Get a single alert by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Alert details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "404":
+          description: Alert not found
+
+    delete:
+      operationId: deleteAlert
+      tags: [alerts]
+      summary: Delete an alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /alerts/{id}/status:
+    put:
+      operationId: updateAlertStatus
+      tags: [alerts]
+      summary: Update remediation script status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAlertStatusBody"
+      responses:
+        "200":
+          description: Updated alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  /alerts/{id}/notes:
+    get:
+      operationId: listAlertNotes
+      tags: [alerts]
+      summary: List analyst notes for an alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlertNote"
+        "404":
+          description: Alert not found
+
+    post:
+      operationId: createAlertNote
+      tags: [alerts]
+      summary: Add an analyst note to an alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNoteBody"
+      responses:
+        "201":
+          description: Created note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertNote"
+        "404":
+          description: Alert not found
+
+  /alerts/{id}/notes/{noteId}:
+    delete:
+      operationId: deleteAlertNote
+      tags: [alerts]
+      summary: Delete an analyst note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Note not found
+
+  /alerts/{id}/activity:
+    get:
+      operationId: getAlertActivity
+      tags: [alerts]
+      summary: Get full change history for a specific alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of activity events ordered newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlertActivityEvent"
+        "404":
+          description: Alert not found
+
+  /alerts/{id}/watch:
+    get:
+      operationId: getAlertWatchStatus
+      tags: [alerts]
+      summary: Check if the current user is watching an alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Watch status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchStatus"
+
+    post:
+      operationId: watchAlert
+      tags: [alerts]
+      summary: Watch an alert for changes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchBody"
+      responses:
+        "201":
+          description: Now watching
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchStatus"
+
+    delete:
+      operationId: unwatchAlert
+      tags: [alerts]
+      summary: Stop watching an alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Unwatched
+
+  /user/notifications:
+    get:
+      operationId: getUserNotifications
+      tags: [alerts]
+      summary: Get recent activity on all alerts watched by the user
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: since
+          in: query
+          schema:
+            type: string
+          description: ISO date — only return activity after this time
+      responses:
+        "200":
+          description: List of activity events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlertActivityEvent"
+
+  /alerts/stats/summary:
+    get:
+      operationId: getAlertStats
+      tags: [alerts]
+      summary: Get dashboard summary statistics including MTTD, MTTR, threat velocity and top resources
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+          description: Filter by AWS account ID (omit or "all" for all accounts)
+        - name: since
+          in: query
+          schema:
+            type: string
+          description: ISO date string — only return alerts created at or after this time
+      responses:
+        "200":
+          description: Alert statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertStats"
+
+  /audit:
+    get:
+      operationId: getAuditLogs
+      tags: [audit]
+      summary: Get audit log entries — tamper-evident trail of all API mutations
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [INFO, WARN, ERROR]
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+
+  /aws/test-connection:
+    post:
+      operationId: testAwsConnection
+      tags: [aws]
+      summary: Test AWS credentials and connectivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AwsCredentials"
+      responses:
+        "200":
+          description: Connection result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AwsConnectionResult"
+
+  /aws/findings:
+    post:
+      operationId: fetchAwsFindings
+      tags: [aws]
+      summary: Fetch live GuardDuty findings from AWS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FetchFindingsBody"
+      responses:
+        "200":
+          description: Live GuardDuty findings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LiveFinding"
+
+  /aws/resource-details:
+    post:
+      operationId: fetchResourceDetails
+      tags: [aws]
+      summary: Fetch live AWS resource details (EC2 instance or IAM role)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FetchResourceBody"
+      responses:
+        "200":
+          description: Resource details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceDetails"
+
+  /aws/investigate:
+    post:
+      operationId: investigateFinding
+      tags: [aws]
+      summary: Deep investigation of a GuardDuty finding using CloudTrail and resource context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestigateBody"
+      responses:
+        "200":
+          description: Investigation report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestigationReport"
+
+  /aws/import-finding:
+    post:
+      operationId: importAndAnalyzeFinding
+      tags: [aws]
+      summary: Import a live GuardDuty finding, analyze it with AI and store it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportFindingBody"
+      responses:
+        "201":
+          description: Imported and analyzed alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  /aws/blast-radius:
+    post:
+      operationId: calculateBlastRadius
+      tags: [aws]
+      summary: Calculate blast radius of a compromised AWS resource — maps all IAM permissions and reachable services
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlastRadiusBody"
+      responses:
+        "200":
+          description: Blast radius analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlastRadiusResult"
+
+  /aws/kill-chain:
+    post:
+      operationId: reconstructKillChain
+      tags: [aws]
+      summary: Reconstruct full attack kill chain from CloudTrail events mapped to MITRE ATT&CK stages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KillChainBody"
+      responses:
+        "200":
+          description: Kill chain reconstruction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KillChainResult"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        severity:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        type:
+          type: string
+        affectedResource:
+          type: string
+        resourceType:
+          type: string
+          enum: [IAM_ROLE, EC2_INSTANCE, S3_BUCKET, OTHER]
+        region:
+          type: string
+        accountId:
+          type: string
+        description:
+          type: string
+        mitreAttackTactic:
+          type: string
+        mitreAttackTechnique:
+          type: string
+        mitreAttackTechniqueId:
+          type: string
+        mitreAttackMitigation:
+          type: string
+        remediationScript:
+          type: string
+        remediationStatus:
+          type: string
+          enum: [pending, generated, applied, failed]
+        rawAlert:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - severity
+        - type
+        - affectedResource
+        - resourceType
+        - region
+        - accountId
+        - description
+        - mitreAttackTactic
+        - mitreAttackTechnique
+        - mitreAttackTechniqueId
+        - mitreAttackMitigation
+        - remediationScript
+        - remediationStatus
+        - rawAlert
+        - createdAt
+        - updatedAt
+
+    AnalyzeAlertBody:
+      type: object
+      properties:
+        alertJson:
+          type: string
+        agentConfig:
+          $ref: "#/components/schemas/AgentConfig"
+      required: [alertJson]
+
+    UpdateAlertStatusBody:
+      type: object
+      properties:
+        remediationStatus:
+          type: string
+          enum: [pending, generated, applied, failed]
+        notes:
+          type: string
+      required: [remediationStatus]
+
+    AlertStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        bySeverity:
+          type: object
+          properties:
+            LOW: { type: integer }
+            MEDIUM: { type: integer }
+            HIGH: { type: integer }
+            CRITICAL: { type: integer }
+          required: [LOW, MEDIUM, HIGH, CRITICAL]
+        byStatus:
+          type: object
+          properties:
+            pending: { type: integer }
+            generated: { type: integer }
+            applied: { type: integer }
+            failed: { type: integer }
+          required: [pending, generated, applied, failed]
+        byResourceType:
+          type: object
+          properties:
+            IAM_ROLE: { type: integer }
+            EC2_INSTANCE: { type: integer }
+            S3_BUCKET: { type: integer }
+            OTHER: { type: integer }
+          required: [IAM_ROLE, EC2_INSTANCE, S3_BUCKET, OTHER]
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/Alert"
+        mttrMinutes:
+          type: number
+        mttdMinutes:
+          type: number
+        staleFindings:
+          type: integer
+        threatVelocity:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string }
+              count: { type: integer }
+            required: [date, count]
+        topResources:
+          type: array
+          items:
+            type: object
+            properties:
+              resource: { type: string }
+              count: { type: integer }
+              topSeverity: { type: string }
+            required: [resource, count, topSeverity]
+        activeAccountCount:
+          type: integer
+          description: Number of distinct AWS account IDs with alerts in the filtered window
+      required: [total, bySeverity, byStatus, byResourceType, recentActivity]
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        resourceType:
+          type: string
+          nullable: true
+        resourceId:
+          type: string
+          nullable: true
+        details:
+          type: string
+          nullable: true
+        ipAddress:
+          type: string
+          nullable: true
+        userAgent:
+          type: string
+          nullable: true
+        severity:
+          type: string
+        createdAt:
+          type: string
+      required: [id, action, severity, createdAt]
+
+    AgentConfig:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [openai, anthropic, custom]
+        apiKey:
+          type: string
+        model:
+          type: string
+        baseUrl:
+          type: string
+        systemPromptSuffix:
+          type: string
+      required: [provider, apiKey, model]
+
+    NlQueryBody:
+      type: object
+      properties:
+        query:
+          type: string
+        agentConfig:
+          $ref: "#/components/schemas/AgentConfig"
+      required: [query]
+
+    BlastRadiusBody:
+      type: object
+      properties:
+        credentials:
+          $ref: "#/components/schemas/AwsCredentials"
+        resourceId:
+          type: string
+        resourceType:
+          type: string
+        agentConfig:
+          $ref: "#/components/schemas/AgentConfig"
+      required: [credentials, resourceId, resourceType]
+
+    BlastRadiusAccessibleService:
+      type: object
+      properties:
+        service: { type: string }
+        actions:
+          type: array
+          items: { type: string }
+        resources:
+          type: array
+          items: { type: string }
+        riskLevel: { type: string }
+      required: [service, actions, resources, riskLevel]
+
+    BlastRadiusResult:
+      type: object
+      properties:
+        resourceId: { type: string }
+        score: { type: integer }
+        summary: { type: string }
+        accessibleServices:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlastRadiusAccessibleService"
+        monetaryImpact: { type: string }
+        dataAtRisk:
+          type: array
+          items: { type: string }
+        lateralMovementPaths:
+          type: array
+          items: { type: string }
+        rawPolicies:
+          type: array
+          items: { type: string }
+      required: [resourceId, score, summary, accessibleServices, monetaryImpact, dataAtRisk, lateralMovementPaths]
+
+    KillChainBody:
+      type: object
+      properties:
+        credentials:
+          $ref: "#/components/schemas/AwsCredentials"
+        alertId:
+          type: integer
+        resourceId:
+          type: string
+        resourceType:
+          type: string
+        agentConfig:
+          $ref: "#/components/schemas/AgentConfig"
+      required: [credentials, resourceId, resourceType]
+
+    KillChainStage:
+      type: object
+      properties:
+        stage: { type: string }
+        mitreTactic: { type: string }
+        mitreId: { type: string }
+        timestamp: { type: string }
+        events:
+          type: array
+          items: { type: string }
+        narrative: { type: string }
+        indicator: { type: string }
+      required: [stage, mitreTactic, mitreId, events, narrative]
+
+    KillChainResult:
+      type: object
+      properties:
+        summary: { type: string }
+        confidence: { type: integer }
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/KillChainStage"
+        attackerProfile: { type: string }
+        durationMinutes: { type: integer }
+        recommendations:
+          type: array
+          items: { type: string }
+      required: [summary, confidence, stages, attackerProfile, recommendations]
+
+    AwsCredentials:
+      type: object
+      properties:
+        accessKeyId:
+          type: string
+        secretAccessKey:
+          type: string
+        sessionToken:
+          type: string
+        region:
+          type: string
+      required: [accessKeyId, secretAccessKey, region]
+
+    AwsConnectionResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        accountId:
+          type: string
+        userId:
+          type: string
+        arn:
+          type: string
+        detectorId:
+          type: string
+        guardDutyEnabled:
+          type: boolean
+        error:
+          type: string
+      required: [success, guardDutyEnabled]
+
+    FetchFindingsBody:
+      type: object
+      properties:
+        credentials:
+          $ref: "#/components/schemas/AwsCredentials"
+        maxResults:
+          type: integer
+        severityMin:
+          type: number
+      required: [credentials]
+
+    LiveFinding:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        severity:
+          type: number
+        title:
+          type: string
+        description:
+          type: string
+        region:
+          type: string
+        accountId:
+          type: string
+        resourceType:
+          type: string
+        affectedResource:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        rawJson:
+          type: string
+        alreadyImported:
+          type: boolean
+      required:
+        - id
+        - type
+        - severity
+        - title
+        - description
+        - region
+        - accountId
+        - resourceType
+        - affectedResource
+        - createdAt
+        - updatedAt
+        - rawJson
+        - alreadyImported
+
+    FetchResourceBody:
+      type: object
+      properties:
+        credentials:
+          $ref: "#/components/schemas/AwsCredentials"
+        resourceType:
+          type: string
+          enum: [IAM_ROLE, EC2_INSTANCE, S3_BUCKET]
+        resourceId:
+          type: string
+      required: [credentials, resourceType, resourceId]
+
+    ResourceDetails:
+      type: object
+      properties:
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        name:
+          type: string
+        state:
+          type: string
+        createdAt:
+          type: string
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              value: { type: string }
+            required: [key, value]
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+        networkInfo:
+          type: object
+          properties:
+            vpcId: { type: string }
+            subnetId: { type: string }
+            privateIp: { type: string }
+            publicIp: { type: string }
+            securityGroups:
+              type: array
+              items: { type: string }
+        iamInfo:
+          type: object
+          properties:
+            attachedPolicies:
+              type: array
+              items: { type: string }
+            inlinePolicies:
+              type: array
+              items: { type: string }
+            lastUsed: { type: string }
+      required: [resourceType, resourceId, attributes]
+
+    InvestigateBody:
+      type: object
+      properties:
+        credentials:
+          $ref: "#/components/schemas/AwsCredentials"
+        findingId:
+          type: string
+        alertId:
+          type: integer
+        resourceId:
+          type: string
+        resourceType:
+          type: string
+        agentConfig:
+          $ref: "#/components/schemas/AgentConfig"
+      required: [credentials, resourceId, resourceType]
+
+    InvestigationEvent:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        eventName:
+          type: string
+        eventSource:
+          type: string
+        sourceIPAddress:
+          type: string
+        userAgent:
+          type: string
+        userIdentity:
+          type: string
+        outcome:
+          type: string
+        details:
+          type: string
+      required: [timestamp, eventName, eventSource, outcome]
+
+    InvestigationReport:
+      type: object
+      properties:
+        summary:
+          type: string
+        riskScore:
+          type: integer
+        timeline:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvestigationEvent"
+        relatedResources:
+          type: array
+          items:
+            type: string
+        indicators:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        resourceSnapshot:
+          $ref: "#/components/schemas/ResourceDetails"
+      required: [summary, riskScore, timeline, relatedResources, indicators, recommendations]
+
+    WatchStatus:
+      type: object
+      properties:
+        watching:
+          type: boolean
+        watcherCount:
+          type: integer
+      required: [watching, watcherCount]
+
+    WatchBody:
+      type: object
+      properties:
+        userId:
+          type: string
+        userName:
+          type: string
+      required: [userId, userName]
+
+    AlertActivityEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        alertId:
+          type: integer
+        alertTitle:
+          type: string
+        eventType:
+          type: string
+        description:
+          type: string
+        triggeredById:
+          type: string
+        triggeredByName:
+          type: string
+        createdAt:
+          type: string
+      required: [id, alertId, alertTitle, eventType, description, triggeredById, triggeredByName, createdAt]
+
+    AlertNote:
+      type: object
+      properties:
+        id:
+          type: integer
+        alertId:
+          type: integer
+        authorId:
+          type: string
+        authorName:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+      required: [id, alertId, authorId, authorName, content, createdAt]
+
+    CreateNoteBody:
+      type: object
+      properties:
+        authorId:
+          type: string
+        authorName:
+          type: string
+        content:
+          type: string
+      required: [authorId, authorName, content]
+
+    ImportFindingBody:
+      type: object
+      properties:
+        credentials:
+          $ref: "#/components/schemas/AwsCredentials"
+        findingRawJson:
+          type: string
+      required: [credentials, findingRawJson]

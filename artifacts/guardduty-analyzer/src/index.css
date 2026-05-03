@@ -1,0 +1,230 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@layer theme, base, clerk, components, utilities;
+@import "tailwindcss";
+
+.cl-formFieldInput::placeholder { color: #5f6b7c; opacity: 1; }
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── Dark mode (default) — Cortex XDR / Cyber-Slate ─────────────────────── */
+:root, .dark {
+  --background: 228 18% 7%;        /* #0c0e12 */
+  --foreground: 210 20% 89%;       /* #dde4ed */
+  --card: 228 16% 10%;             /* #161920 */
+  --card-foreground: 210 20% 89%;
+  --popover: 228 16% 10%;
+  --popover-foreground: 210 20% 89%;
+  --primary: 36 100% 50%;          /* #ff9900 orange */
+  --primary-foreground: 0 0% 0%;
+  --secondary: 228 15% 15%;        /* #1e2130 */
+  --secondary-foreground: 210 20% 89%;
+  --muted: 222 14% 32%;            /* #414d60 */
+  --muted-foreground: 216 12% 54%; /* #7f8fa6 */
+  --accent: 36 100% 50%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 88% 60%;
+  --destructive-foreground: 210 20% 89%;
+  --border: 228 14% 17%;           /* #262a33 */
+  --input: 228 14% 17%;
+  --ring: 36 100% 50%;
+  --radius: 3px;
+
+  --app-font-sans: 'Inter', system-ui, sans-serif;
+  --app-font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Semantic surface tokens — dark */
+  --cs-bg:         #0c0e12;
+  --cs-surface:    #161920;
+  --cs-surface2:   #1e2130;
+  --cs-surface3:   #252836;
+  --cs-border:     #262a33;
+  --cs-border2:    #333847;
+  --cs-text:       #dde4ed;
+  --cs-text-dim:   #7f8fa6;
+  --cs-text-muted: #414d60;
+  --cs-orange:     #ff9900;
+  --cs-green:      #22c55e;
+  --cs-red:        #f14c4c;
+  --cs-blue:       #38bdf8;
+
+  /* Legacy aliases (keep existing components working) */
+  --aws-nav:       #131620;
+  --aws-surface:   #0c0e12;
+  --aws-surface-2: #161920;
+  --aws-surface-3: #1e2130;
+  --aws-border:    #262a33;
+  --aws-border-2:  #333847;
+  --aws-text:      #dde4ed;
+  --aws-text-dim:  #7f8fa6;
+  --aws-text-muted:#414d60;
+  --guardduty-orange: #ff9900;
+  --success: #22c55e;
+  --warn:    #ff9900;
+  --error:   #f14c4c;
+}
+
+/* ── Light mode — clean Palo Alto / Cortex style ─────────────────────────── */
+.light {
+  --background: 210 40% 98%;       /* #f8fafc */
+  --foreground: 222 47% 11%;       /* #0f172a */
+  --card: 0 0% 100%;               /* #ffffff */
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 36 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 210 40% 96%;        /* #f1f5f9 */
+  --secondary-foreground: 222 47% 11%;
+  --muted: 215 20% 65%;
+  --muted-foreground: 215 16% 47%; /* #64748b */
+  --accent: 36 100% 50%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%;           /* #e2e8f0 */
+  --input: 214 32% 91%;
+  --ring: 36 100% 50%;
+
+  --cs-bg:         #f8fafc;
+  --cs-surface:    #ffffff;
+  --cs-surface2:   #f1f5f9;
+  --cs-surface3:   #e8edf4;
+  --cs-border:     #e2e8f0;
+  --cs-border2:    #cbd5e1;
+  --cs-text:       #0f172a;
+  --cs-text-dim:   #475569;
+  --cs-text-muted: #94a3b8;
+  --cs-orange:     #e07800;
+  --cs-green:      #16a34a;
+  --cs-red:        #dc2626;
+  --cs-blue:       #0284c7;
+
+  --aws-nav:       #f1f5f9;
+  --aws-surface:   #f8fafc;
+  --aws-surface-2: #ffffff;
+  --aws-surface-3: #f1f5f9;
+  --aws-border:    #e2e8f0;
+  --aws-border-2:  #cbd5e1;
+  --aws-text:      #0f172a;
+  --aws-text-dim:  #475569;
+  --aws-text-muted:#94a3b8;
+  --guardduty-orange: #e07800;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --font-sans: var(--app-font-sans);
+  --font-mono: var(--app-font-mono);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { color-scheme: dark; }
+html.light { color-scheme: light; }
+
+body {
+  background-color: var(--cs-bg);
+  color: var(--cs-text);
+  font-family: var(--app-font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--cs-bg); }
+::-webkit-scrollbar-thumb { background: var(--cs-border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--cs-text-muted); }
+
+::selection { background: rgba(255,153,0,0.22); }
+
+button, a { transition: background-color 0.1s, color 0.1s, border-color 0.1s, opacity 0.1s; }
+
+/* Light mode inverts specific icons and logos */
+.light .guardai-logo path,
+.light .guardai-logo circle,
+.light .guardai-logo line { stroke: var(--cs-orange); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Light-mode overrides: remap hardcoded dark hex values to CSS-variable colours.
+   Two-class specificity (0-2-0) wins over single-class Tailwind utilities (0-1-0)
+   so no !important needed.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* == Background colours == */
+.light .bg-\[\#141f2e\],
+.light .bg-\[\#141820\] { background-color: var(--cs-surface); }
+
+.light .bg-\[\#0f1923\],
+.light .bg-\[\#08111a\],
+.light .bg-\[\#0a1520\],
+.light .bg-\[\#0a0d14\],
+.light .bg-\[\#0d1017\],
+.light .bg-\[\#090b0f\],
+.light .bg-\[\#111520\] { background-color: var(--cs-bg); }
+
+.light .bg-\[\#1f2f40\],
+.light .bg-\[\#1a2535\],
+.light .bg-\[\#1c2030\] { background-color: var(--cs-surface2); }
+
+/* == Hover background colours == */
+.light .hover\:bg-\[\#1a2535\]:hover { background-color: var(--cs-surface3); }
+.light .hover\:bg-\[\#141f2e\]:hover { background-color: var(--cs-surface); }
+.light .hover\:bg-\[\#1f2f40\]:hover { background-color: var(--cs-surface2); }
+
+/* == Text colours == */
+.light .text-\[\#e8eaf0\],
+.light .text-\[\#d1d5db\],
+.light .text-\[\#0f1923\],
+.light .text-\[\#374151\],
+.light .text-\[\#2d3748\] { color: var(--cs-text); }
+
+.light .text-\[\#7f9ab0\],
+.light .text-\[\#9ca3af\],
+.light .text-\[\#6b7280\] { color: var(--cs-text-dim); }
+
+.light .text-\[\#415161\],
+.light .text-\[\#2a3f54\],
+.light .text-\[\#1f2f40\],
+.light .text-\[\#1c2030\] { color: var(--cs-text-muted); }
+
+/* == Border colours == */
+.light .border-\[\#1f2f40\],
+.light .border-\[\#141824\],
+.light .border-\[\#141820\],
+.light .border-\[\#1c2030\] { border-color: var(--cs-border); }
+
+.light .border-\[\#415161\] { border-color: var(--cs-border2); }
+
+/* == Hover border colours == */
+.light .hover\:border-\[\#ff990030\]:hover { border-color: rgba(224,120,0,0.35); }
+.light .hover\:border-\[\#ff990060\]:hover { border-color: rgba(224,120,0,0.55); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Dark-mode: fix ultra-dark text colours that become nearly invisible.
+   #2a3f54 and plain #1f2f40 used as text are too dark on dark backgrounds.
+   ───────────────────────────────────────────────────────────────────────────── */
+.dark .text-\[\#2a3f54\] { color: var(--cs-text-dim); }
+.dark .text-\[\#1f2f40\]  { color: var(--cs-text-muted); }
